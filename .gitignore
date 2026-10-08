@@ -1,0 +1,8 @@
+data/
+*.h5
+*.keras
+class_indices.json
+.ipynb_checkpoints/
+__pycache__/
+.venv/
+.DS_Store
