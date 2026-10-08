@@ -23,7 +23,7 @@ Classifies chest X-rays into **COVID-19, Normal, Pneumonia and Tuberculosis** by
 
 ## Methodology
 
-![Methodology flowchart](reports/figures/methodology_flowchart.png)
+![Methodology flowchart](methodology_flowchart.png)
 
 **[Explore the interactive methodology](https://spoorthihs4-ops.github.io/chest-xray-resnet50-transfer-learning/)** – click any stage to see what it does, why it matters, the result it produced and the techniques behind it.
 
@@ -79,27 +79,27 @@ flowchart TB
 - **Validation is optimistic.** Validation images come from the training folder, so the 98.4 % validation score overstates performance; the 92.35 % held-out test score is the realistic estimate.
 
 <p align="center">
-  <img src="reports/figures/training_history.png" width="98%" alt="Training history across three phases">
+  <img src="training_history.png" width="98%" alt="Training history across three phases">
 </p>
 <p align="center">
-  <img src="reports/figures/confusion_matrices.png" width="60%" alt="Confusion matrices">
-  <img src="reports/figures/val_test_tta_comparison.png" width="38%" alt="Validation vs test vs TTA">
+  <img src="confusion_matrices.png" width="60%" alt="Confusion matrices">
+  <img src="val_test_tta_comparison.png" width="38%" alt="Validation vs test vs TTA">
 </p>
 
 ## Notebooks
 
 | Notebook | Contents |
 |---|---|
-| [`00_full_pipeline_run_all`](notebooks/00_full_pipeline_run_all.ipynb) | **Everything, top to bottom - run this to reproduce** |
-| [`01_dataset_exploration`](notebooks/01_dataset_exploration.ipynb) | Dataset download, structure, summary statistics, image sizes, class distribution, sample X-rays |
-| [`02_transfer_learning_model`](notebooks/02_transfer_learning_model.ipynb) | Why ResNet50, configuration, CLAHE and augmentation, class weights, model architecture |
-| [`03_three_phase_fine_tuning`](notebooks/03_three_phase_fine_tuning.ipynb) | Cosine LR schedule, three training phases, combined training curves |
-| [`04_evaluation_and_tta`](notebooks/04_evaluation_and_tta.ipynb) | Validation and test metrics, TTA, confusion matrices, per-class and comparison charts |
-| [`05_deployment_and_summary`](notebooks/05_deployment_and_summary.ipynb) | Save and reload the model, `predict_xray()`, prediction grid, summary and reflection |
+| [`00_full_pipeline_run_all`](00_full_pipeline_run_all.ipynb) | **Everything, top to bottom - run this to reproduce** |
+| [`01_dataset_exploration`](01_dataset_exploration.ipynb) | Dataset download, structure, summary statistics, image sizes, class distribution, sample X-rays |
+| [`02_transfer_learning_model`](02_transfer_learning_model.ipynb) | Why ResNet50, configuration, CLAHE and augmentation, class weights, model architecture |
+| [`03_three_phase_fine_tuning`](03_three_phase_fine_tuning.ipynb) | Cosine LR schedule, three training phases, combined training curves |
+| [`04_evaluation_and_tta`](04_evaluation_and_tta.ipynb) | Validation and test metrics, TTA, confusion matrices, per-class and comparison charts |
+| [`05_deployment_and_summary`](05_deployment_and_summary.ipynb) | Save and reload the model, `predict_xray()`, prediction grid, summary and reflection |
 
 ## Reproduce
 
-1. Open [`00_full_pipeline_run_all.ipynb`](notebooks/00_full_pipeline_run_all.ipynb) on **Kaggle** with a **GPU T4** accelerator and Internet enabled.
+1. Open [`00_full_pipeline_run_all.ipynb`](00_full_pipeline_run_all.ipynb) on **Kaggle** with a **GPU T4** accelerator and Internet enabled.
 2. The dataset [`jtiptj/chest-xray-pneumoniacovid19tuberculosis`](https://www.kaggle.com/datasets/jtiptj/chest-xray-pneumoniacovid19tuberculosis) downloads automatically through `kagglehub`.
 3. **Run All.** Each training epoch takes about 2.5-4 minutes on a T4 (longer once all layers are unfrozen).
 

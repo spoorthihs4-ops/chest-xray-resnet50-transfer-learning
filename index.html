@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Methodology · Chest X-Ray ResNet50 Transfer Learning</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#F3F6FB;--panel:#FFFFFF;--ink:#1F2A44;--muted:#5B6478;--line:#D6DDEA;--chip:#EEF2F9;--accent:#D1335B;--res:#F0FAF4;--resline:#16A34A}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111827;--panel:#1B2436;--ink:#E7ECF5;--muted:#A6B0C3;--line:#2E3A52;--chip:#25304A;--res:#173027;--accent:#FF7A97}}
+:root[data-theme="dark"]{--bg:#111827;--panel:#1B2436;--ink:#E7ECF5;--muted:#A6B0C3;--line:#2E3A52;--chip:#25304A;--res:#173027;--accent:#FF7A97}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI","Helvetica Neue",Helvetica,Arial,sans-serif;line-height:1.5}
+main{max-width:1180px;margin:0 auto;padding:28px 20px 40px}
+h1{font-size:clamp(1.4rem,3vw,2rem);margin:0 0 6px;letter-spacing:-.01em}
+.sub{color:var(--muted);margin:0 0 20px;max-width:72ch}
+.chart{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:10px;overflow-x:auto}
+.chart svg{width:100%;min-width:760px;height:auto;display:block}
+.node{cursor:pointer;transition:opacity .2s,transform .2s;transform-box:fill-box;transform-origin:center}
+.node:hover{transform:translateY(-2px)}
+.node:focus{outline:none}
+.node:focus-visible > g rect,.node.active > g rect{stroke-width:4}
+.chart.has-active .node:not(.active){opacity:.45}
+aside{margin-top:20px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:22px 26px;max-width:880px}
+aside h2{margin:0 0 4px;font-size:1.25rem;display:flex;gap:10px;align-items:center}
+.dot{width:32px;height:32px;border-radius:50%;display:inline-grid;place-items:center;color:#fff;font-size:.85rem;font-weight:700;flex:none}
+aside h3{font-size:.95rem;margin:16px 0 4px}
+aside p{margin:0;color:var(--muted);max-width:75ch}
+.result{margin-top:16px;background:var(--res);border-left:4px solid var(--resline);border-radius:8px;padding:10px 14px}
+.result p{color:var(--ink)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chips span{background:var(--chip);border-radius:999px;padding:3px 10px;font-size:.82rem}
+.nb{display:inline-block;margin-top:16px;font-size:.9rem;color:var(--accent);font-weight:600;text-decoration:none}
+.nb:hover{text-decoration:underline}
+.nav{display:flex;gap:8px;margin-top:18px;max-width:420px}
+.nav button{flex:1;border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:10px;padding:8px;font:inherit;cursor:pointer}
+.nav button:disabled{opacity:.45;cursor:default}
+.nav button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hint{color:var(--muted);font-size:.9rem;margin-top:12px}
+@media (prefers-reduced-motion:reduce){.node{transition:none}.node:hover{transform:none}}
+</style></head>
+<body><main>
+<h1>How the chest X-ray classifier was built</h1>
+<p class="sub">Ten stages take 7,135 chest X-rays to a fine-tuned ResNet50 that reaches 92.35% accuracy on held-out test images. Select any stage to see what it does, why it matters, the result it produced and the techniques behind it.</p>
+<div class="chart" id="chart"><svg xmlns="http://www.w3.org/2000/svg" viewBox="20 85 1160 610" role="img" aria-label="Methodology flowchart" font-family="Segoe UI, Helvetica Neue, Helvetica, Arial, sans-serif">
+<defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5B6478"/></marker>
+<filter id="sh" x="-10%" y="-10%" width="120%" height="130%"><feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#1F2A44" flood-opacity="0.18"/></filter>
+<linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F6F8FC"/><stop offset="1" stop-color="#EEF3FB"/></linearGradient></defs>
+<g class="node" data-n="1" tabindex="0" role="button" aria-label="Stage 1: Dataset &amp; EDA">
+<g filter="url(#sh)"><rect x="40.0" y="105" width="260.5" height="130" rx="14" fill="#fff" stroke="#2B59C3" stroke-width="2"/></g>
+<path d="M40.0,119 a14,14 0 0 1 14,-14 h232.5 a14,14 0 0 1 14,14 v30 h-260.5 z" fill="#2B59C3"/>
+<circle cx="64.0" cy="127" r="13" fill="#fff"/><text x="64.0" y="132" text-anchor="middle" font-size="14" font-weight="700" fill="#2B59C3">1</text>
+<text x="86.0" y="133" font-size="16" font-weight="700" fill="#fff">Dataset &amp; EDA</text>
+<circle cx="60.0" cy="167" r="3.5" fill="#2B59C3"/><text x="72.0" y="171" font-size="13.5" fill="#2B3245">7,135 chest X-rays, 4 classes</text>
+<circle cx="60.0" cy="189" r="3.5" fill="#2B59C3"/><text x="72.0" y="193" font-size="13.5" fill="#2B3245">Pneumonia 3,875 vs COVID 460</text>
+<circle cx="60.0" cy="211" r="3.5" fill="#2B59C3"/><text x="72.0" y="215" font-size="13.5" fill="#2B3245">Resolution &amp; mode audit</text>
+</g>
+<g class="node" data-n="2" tabindex="0" role="button" aria-label="Stage 2: Train / val / test">
+<g filter="url(#sh)"><rect x="326.5" y="105" width="260.5" height="130" rx="14" fill="#fff" stroke="#0E9384" stroke-width="2"/></g>
+<path d="M326.5,119 a14,14 0 0 1 14,-14 h232.5 a14,14 0 0 1 14,14 v30 h-260.5 z" fill="#0E9384"/>
+<circle cx="350.5" cy="127" r="13" fill="#fff"/><text x="350.5" y="132" text-anchor="middle" font-size="14" font-weight="700" fill="#0E9384">2</text>
+<text x="372.5" y="133" font-size="16" font-weight="700" fill="#fff">Train / val / test</text>
+<circle cx="346.5" cy="167" r="3.5" fill="#0E9384"/><text x="358.5" y="171" font-size="13.5" fill="#2B3245">Train 5,378 (85%)</text>
+<circle cx="346.5" cy="189" r="3.5" fill="#0E9384"/><text x="358.5" y="193" font-size="13.5" fill="#2B3245">Validation 948 (15%)</text>
+<circle cx="346.5" cy="211" r="3.5" fill="#0E9384"/><text x="358.5" y="215" font-size="13.5" fill="#2B3245">Test 771 (held out)</text>
+</g>
+<path d="M303.5,170 H321.5" fill="none" stroke="#5B6478" stroke-width="2.2" marker-end="url(#ah)"/>
+<g class="node" data-n="3" tabindex="0" role="button" aria-label="Stage 3: CLAHE preprocessing">
+<g filter="url(#sh)"><rect x="613.0" y="105" width="260.5" height="130" rx="14" fill="#fff" stroke="#7A4FD1" stroke-width="2"/></g>
+<path d="M613.0,119 a14,14 0 0 1 14,-14 h232.5 a14,14 0 0 1 14,14 v30 h-260.5 z" fill="#7A4FD1"/>
+<circle cx="637.0" cy="127" r="13" fill="#fff"/><text x="637.0" y="132" text-anchor="middle" font-size="14" font-weight="700" fill="#7A4FD1">3</text>
+<text x="659.0" y="133" font-size="16" font-weight="700" fill="#fff">CLAHE preprocessing</text>
+<circle cx="633.0" cy="167" r="3.5" fill="#7A4FD1"/><text x="645.0" y="171" font-size="13.5" fill="#2B3245">Local contrast on L channel</text>
+<circle cx="633.0" cy="189" r="3.5" fill="#7A4FD1"/><text x="645.0" y="193" font-size="13.5" fill="#2B3245">clipLimit 2.0 · 8x8 tiles</text>
+<circle cx="633.0" cy="211" r="3.5" fill="#7A4FD1"/><text x="645.0" y="215" font-size="13.5" fill="#2B3245">ResNet50 normalisation</text>
+</g>
+<path d="M590.0,170 H608.0" fill="none" stroke="#5B6478" stroke-width="2.2" marker-end="url(#ah)"/>
+<g class="node" data-n="4" tabindex="0" role="button" aria-label="Stage 4: Safe augmentation">
+<g filter="url(#sh)"><rect x="899.5" y="105" width="260.5" height="130" rx="14" fill="#fff" stroke="#B5338A" stroke-width="2"/></g>
+<path d="M899.5,119 a14,14 0 0 1 14,-14 h232.5 a14,14 0 0 1 14,14 v30 h-260.5 z" fill="#B5338A"/>
+<circle cx="923.5" cy="127" r="13" fill="#fff"/><text x="923.5" y="132" text-anchor="middle" font-size="14" font-weight="700" fill="#B5338A">4</text>
+<text x="945.5" y="133" font-size="16" font-weight="700" fill="#fff">Safe augmentation</text>
+<circle cx="919.5" cy="167" r="3.5" fill="#B5338A"/><text x="931.5" y="171" font-size="13.5" fill="#2B3245">Rotate · shift · zoom · shear</text>
+<circle cx="919.5" cy="189" r="3.5" fill="#B5338A"/><text x="931.5" y="193" font-size="13.5" fill="#2B3245">Brightness 0.85-1.15</text>
+<circle cx="919.5" cy="211" r="3.5" fill="#B5338A"/><text x="931.5" y="215" font-size="13.5" fill="#2B3245">No flips (heart position)</text>
+</g>
+<path d="M876.5,170 H894.5" fill="none" stroke="#5B6478" stroke-width="2.2" marker-end="url(#ah)"/>
+<g class="node" data-n="5" tabindex="0" role="button" aria-label="Stage 5: ResNet50 backbone">
+<g filter="url(#sh)"><rect x="40.0" y="325" width="353.3333333333333" height="130" rx="14" fill="#fff" stroke="#E25A1C" stroke-width="2"/></g>
+<path d="M40.0,339 a14,14 0 0 1 14,-14 h325.3333333333333 a14,14 0 0 1 14,14 v30 h-353.3333333333333 z" fill="#E25A1C"/>
+<circle cx="64.0" cy="347" r="13" fill="#fff"/><text x="64.0" y="352" text-anchor="middle" font-size="14" font-weight="700" fill="#E25A1C">5</text>
+<text x="86.0" y="353" font-size="16" font-weight="700" fill="#fff">ResNet50 backbone</text>
+<circle cx="60.0" cy="387" r="3.5" fill="#E25A1C"/><text x="72.0" y="391" font-size="13.5" fill="#2B3245">ImageNet pretrained</text>
+<circle cx="60.0" cy="409" r="3.5" fill="#E25A1C"/><text x="72.0" y="413" font-size="13.5" fill="#2B3245">Head 512 → 256 → 128 → 4</text>
+<circle cx="60.0" cy="431" r="3.5" fill="#E25A1C"/><text x="72.0" y="435" font-size="13.5" fill="#2B3245">24.8 M parameters</text>
+</g>
+<g class="node" data-n="6" tabindex="0" role="button" aria-label="Stage 6: Imbalance &amp; loss">
+<g filter="url(#sh)"><rect x="423.3333333333333" y="325" width="353.3333333333333" height="130" rx="14" fill="#fff" stroke="#D99A06" stroke-width="2"/></g>
+<path d="M423.3333333333333,339 a14,14 0 0 1 14,-14 h325.3333333333333 a14,14 0 0 1 14,14 v30 h-353.3333333333333 z" fill="#D99A06"/>
+<circle cx="447.3333333333333" cy="347" r="13" fill="#fff"/><text x="447.3333333333333" y="352" text-anchor="middle" font-size="14" font-weight="700" fill="#D99A06">6</text>
+<text x="469.3333333333333" y="353" font-size="16" font-weight="700" fill="#fff">Imbalance &amp; loss</text>
+<circle cx="443.3333333333333" cy="387" r="3.5" fill="#D99A06"/><text x="455.3333333333333" y="391" font-size="13.5" fill="#2B3245">Balanced class weights</text>
+<circle cx="443.3333333333333" cy="409" r="3.5" fill="#D99A06"/><text x="455.3333333333333" y="413" font-size="13.5" fill="#2B3245">Label smoothing 0.1</text>
+<circle cx="443.3333333333333" cy="431" r="3.5" fill="#D99A06"/><text x="455.3333333333333" y="435" font-size="13.5" fill="#2B3245">Cosine LR annealing</text>
+</g>
+<path d="M396.3333333333333,390 H418.3333333333333" fill="none" stroke="#5B6478" stroke-width="2.2" marker-end="url(#ah)"/>
+<g class="node" data-n="7" tabindex="0" role="button" aria-label="Stage 7: 3-phase fine-tuning">
+<g filter="url(#sh)"><rect x="806.6666666666666" y="325" width="353.3333333333333" height="130" rx="14" fill="#fff" stroke="#1D7A8C" stroke-width="2"/></g>
+<path d="M806.6666666666666,339 a14,14 0 0 1 14,-14 h325.3333333333333 a14,14 0 0 1 14,14 v30 h-353.3333333333333 z" fill="#1D7A8C"/>
+<circle cx="830.6666666666666" cy="347" r="13" fill="#fff"/><text x="830.6666666666666" y="352" text-anchor="middle" font-size="14" font-weight="700" fill="#1D7A8C">7</text>
+<text x="852.6666666666666" y="353" font-size="16" font-weight="700" fill="#fff">3-phase fine-tuning</text>
+<circle cx="826.6666666666666" cy="387" r="3.5" fill="#1D7A8C"/><text x="838.6666666666666" y="391" font-size="13.5" fill="#2B3245">Head → top 55 → all layers</text>
+<circle cx="826.6666666666666" cy="409" r="3.5" fill="#1D7A8C"/><text x="838.6666666666666" y="413" font-size="13.5" fill="#2B3245">LR 1e-3 → 1e-4 → 5e-6</text>
+<circle cx="826.6666666666666" cy="431" r="3.5" fill="#1D7A8C"/><text x="838.6666666666666" y="435" font-size="13.5" fill="#2B3245">Best val accuracy 98.4%</text>
+</g>
+<path d="M779.6666666666666,390 H801.6666666666666" fill="none" stroke="#5B6478" stroke-width="2.2" marker-end="url(#ah)"/>
+<g class="node" data-n="8" tabindex="0" role="button" aria-label="Stage 8: Evaluate on test">
+<g filter="url(#sh)"><rect x="40.0" y="545" width="353.3333333333333" height="130" rx="14" fill="#fff" stroke="#D1335B" stroke-width="2"/></g>
+<path d="M40.0,559 a14,14 0 0 1 14,-14 h325.3333333333333 a14,14 0 0 1 14,14 v30 h-353.3333333333333 z" fill="#D1335B"/>
+<circle cx="64.0" cy="567" r="13" fill="#fff"/><text x="64.0" y="572" text-anchor="middle" font-size="14" font-weight="700" fill="#D1335B">8</text>
+<text x="86.0" y="573" font-size="16" font-weight="700" fill="#fff">Evaluate on test</text>
+<circle cx="60.0" cy="607" r="3.5" fill="#D1335B"/><text x="72.0" y="611" font-size="13.5" fill="#2B3245">Accuracy 92.35%</text>
+<circle cx="60.0" cy="629" r="3.5" fill="#D1335B"/><text x="72.0" y="633" font-size="13.5" fill="#2B3245">COVID &amp; TB F1 = 1.00</text>
+<circle cx="60.0" cy="651" r="3.5" fill="#D1335B"/><text x="72.0" y="655" font-size="13.5" fill="#2B3245">Normal recall 0.83</text>
+</g>
+<g class="node" data-n="9" tabindex="0" role="button" aria-label="Stage 9: TTA &amp; error analysis">
+<g filter="url(#sh)"><rect x="423.3333333333333" y="545" width="353.3333333333333" height="130" rx="14" fill="#fff" stroke="#16A34A" stroke-width="2"/></g>
+<path d="M423.3333333333333,559 a14,14 0 0 1 14,-14 h325.3333333333333 a14,14 0 0 1 14,14 v30 h-353.3333333333333 z" fill="#16A34A"/>
+<circle cx="447.3333333333333" cy="567" r="13" fill="#fff"/><text x="447.3333333333333" y="572" text-anchor="middle" font-size="14" font-weight="700" fill="#16A34A">9</text>
+<text x="469.3333333333333" y="573" font-size="16" font-weight="700" fill="#fff">TTA &amp; error analysis</text>
+<circle cx="443.3333333333333" cy="607" r="3.5" fill="#16A34A"/><text x="455.3333333333333" y="611" font-size="13.5" fill="#2B3245">10-pass TTA: 84.7%</text>
+<circle cx="443.3333333333333" cy="629" r="3.5" fill="#16A34A"/><text x="455.3333333333333" y="633" font-size="13.5" fill="#2B3245">Normal → Pneumonia errors</text>
+<circle cx="443.3333333333333" cy="651" r="3.5" fill="#16A34A"/><text x="455.3333333333333" y="655" font-size="13.5" fill="#2B3245">Confusion &amp; per-class charts</text>
+</g>
+<path d="M396.3333333333333,610 H418.3333333333333" fill="none" stroke="#5B6478" stroke-width="2.2" marker-end="url(#ah)"/>
+<g class="node" data-n="10" tabindex="0" role="button" aria-label="Stage 10: Deploy &amp; predict">
+<g filter="url(#sh)"><rect x="806.6666666666666" y="545" width="353.3333333333333" height="130" rx="14" fill="#fff" stroke="#1F2A44" stroke-width="2"/></g>
+<path d="M806.6666666666666,559 a14,14 0 0 1 14,-14 h325.3333333333333 a14,14 0 0 1 14,14 v30 h-353.3333333333333 z" fill="#1F2A44"/>
+<circle cx="830.6666666666666" cy="567" r="13" fill="#fff"/><text x="830.6666666666666" y="572" text-anchor="middle" font-size="12" font-weight="700" fill="#1F2A44">10</text>
+<text x="852.6666666666666" y="573" font-size="16" font-weight="700" fill="#fff">Deploy &amp; predict</text>
+<circle cx="826.6666666666666" cy="607" r="3.5" fill="#1F2A44"/><text x="838.6666666666666" y="611" font-size="13.5" fill="#2B3245">Saved model + class map</text>
+<circle cx="826.6666666666666" cy="629" r="3.5" fill="#1F2A44"/><text x="838.6666666666666" y="633" font-size="13.5" fill="#2B3245">predict_xray() function</text>
+<circle cx="826.6666666666666" cy="651" r="3.5" fill="#1F2A44"/><text x="838.6666666666666" y="655" font-size="13.5" fill="#2B3245">Prediction grid demo</text>
+</g>
+<path d="M779.6666666666666,610 H801.6666666666666" fill="none" stroke="#5B6478" stroke-width="2.2" marker-end="url(#ah)"/>
+<path d="M1029.75,235 V280 H216.66666666666666" fill="none" stroke="#5B6478" stroke-width="2.2"/>
+<path d="M216.66666666666666,280 V319" fill="none" stroke="#5B6478" stroke-width="2.2" marker-end="url(#ah)"/>
+<path d="M983.3333333333333,455 V500 H216.66666666666666" fill="none" stroke="#5B6478" stroke-width="2.2"/>
+<path d="M216.66666666666666,500 V539" fill="none" stroke="#5B6478" stroke-width="2.2" marker-end="url(#ah)"/>
+</svg></div>
+<aside id="panel" aria-live="polite"></aside>
+<p class="hint">Tip: use Tab and Enter, or the left and right arrow keys, to step through the stages.</p>
+</main>
+<script>
+const D={"1": {"t": "Dataset and EDA", "what": "Load the Kaggle chest X-ray dataset of 7,135 images in four classes, count images per class and split, check image resolutions and colour modes, and view sample X-rays from every class.", "why": "The classes are heavily imbalanced and the images come in very different sizes and formats, which shapes every later choice from resizing to class weights.", "res": "Training folder: Pneumonia 3,875, Normal 1,341, Tuberculosis 650, COVID-19 460. Resolutions range from 512x512 to 2000x2000.", "tech": ["kagglehub", "pandas", "PIL", "matplotlib"], "nb": "01_dataset_exploration"}, "2": {"t": "Train, validation and test", "what": "Use 15% of the training folder as a validation subset instead of the original 38-image validation folder, and keep the official test folder completely held out.", "why": "A 38-image validation set gives jumpy, unreliable training curves; 948 images make checkpointing and early stopping trustworthy.", "res": "Train 5,378 / validation 948 / test 771 images.", "tech": ["ImageDataGenerator", "validation_split"], "nb": "02_transfer_learning_model"}, "3": {"t": "CLAHE preprocessing", "what": "Apply Contrast Limited Adaptive Histogram Equalisation to the luminance channel of every image, then the standard ResNet50 normalisation.", "why": "X-rays are often low in contrast; CLAHE makes subtle lung opacities and infiltrates easier to see without amplifying noise.", "res": "Every training, validation and test image passes through the same CLAHE step at 224x224.", "tech": ["OpenCV CLAHE", "LAB colour space", "ResNet50 preprocess_input"], "nb": "02_transfer_learning_model"}, "4": {"t": "Medically safe augmentation", "what": "Augment training images with small rotations, shifts, zoom, shear and brightness changes, and never flip them horizontally.", "why": "Flipping a chest X-ray moves the heart to the wrong side, which corrupts a diagnostically important feature.", "res": "An earlier run showed flip-based TTA lowered accuracy (92.61% to 91.83%), so flips were removed everywhere.", "tech": ["rotation 15\u00b0", "shift 10%", "zoom 10%", "brightness 0.85-1.15"], "nb": "02_transfer_learning_model"}, "5": {"t": "ResNet50 backbone", "what": "Load ResNet50 pretrained on ImageNet without its top layer and add a custom head: global pooling, then dense layers of 512, 256 and 128 units with batch normalisation and dropout, and a 4-class softmax.", "why": "ImageNet features such as edges and textures transfer to X-rays, and residual connections make deep fine-tuning stable.", "res": "24.8 M parameters in total; 1.2 M trainable while the backbone is frozen.", "tech": ["ResNet50", "GlobalAveragePooling2D", "BatchNormalization", "Dropout"], "nb": "02_transfer_learning_model"}, "6": {"t": "Imbalance and loss", "what": "Compute balanced class weights, use label-smoothed cross-entropy, and decay the learning rate with a cosine schedule plus ReduceLROnPlateau.", "why": "Without weights the model would favour Pneumonia, the majority class; label smoothing reduces over-confidence.", "res": "Class weights: COVID-19 3.44, Tuberculosis 2.43, Normal 1.18, Pneumonia 0.41.", "tech": ["compute_class_weight", "label smoothing 0.1", "cosine annealing"], "nb": "02_transfer_learning_model"}, "7": {"t": "Three-phase fine-tuning", "what": "Train the head with the backbone frozen, then unfreeze the top 55 ResNet50 layers, then fine-tune all 185 layers at a very small learning rate, each phase starting from the previous best checkpoint.", "why": "Unfreezing gradually adapts the network to X-ray textures without destroying the useful ImageNet features (catastrophic forgetting).", "res": "Best validation accuracy: 96.31% (phase 1), 97.78% (phase 2), 98.42% (phase 3).", "tech": ["progressive unfreezing", "EarlyStopping", "ModelCheckpoint", "Adam"], "nb": "03_three_phase_fine_tuning"}, "8": {"t": "Evaluate on the test set", "what": "Score the best checkpoint on the 771 held-out test images with accuracy, precision, recall, F1 and a per-class report.", "why": "The test set was never used for training or model selection, so it is the honest estimate of real-world performance.", "res": "Test accuracy 92.35%, weighted F1 0.923. COVID-19 and Tuberculosis F1 = 1.00; Normal recall 0.83 is the main weakness.", "tech": ["classification_report", "precision / recall / F1"], "nb": "04_evaluation_and_tta"}, "9": {"t": "TTA and error analysis", "what": "Compare standard predictions with 10-pass test-time augmentation and study confusion matrices and per-class metrics.", "why": "Understanding where the model fails matters more in medicine than a single headline number.", "res": "TTA lowered accuracy to 84.70% because Normal recall fell from 0.83 to 0.50; most errors are Normal X-rays predicted as Pneumonia.", "tech": ["test-time augmentation", "confusion matrix", "per-class metrics"], "nb": "04_evaluation_and_tta"}, "10": {"t": "Deploy and predict", "what": "Save the trained model with a class-index mapping, reload it, and wrap inference in a reusable predict_xray() function demonstrated on random test images.", "why": "A saved model and a single prediction function make the classifier usable outside the training notebook.", "res": "Model and class map saved and reloaded successfully, with a 2x4 prediction grid showing correct and incorrect cases.", "tech": ["Keras model save / load", "class_indices.json", "predict_xray()"], "nb": "05_deployment_and_summary"}};
+const C={"1": "#2B59C3", "2": "#0E9384", "3": "#7A4FD1", "4": "#B5338A", "5": "#E25A1C", "6": "#D99A06", "7": "#1D7A8C", "8": "#D1335B", "9": "#16A34A", "10": "#1F2A44"};
+const REPO="https://github.com/spoorthihs4-ops/chest-xray-resnet50-transfer-learning/blob/main/";
+const chart=document.getElementById("chart"),panel=document.getElementById("panel");
+const N=Object.keys(D).length;let cur=1;
+function show(n){
+  cur=n;const d=D[n];
+  document.querySelectorAll(".node").forEach(g=>g.classList.toggle("active",+g.dataset.n===n));
+  chart.classList.add("has-active");
+  panel.innerHTML=`<h2><span class="dot" style="background:${C[n]}">${n}</span>${d.t}</h2>
+  <h3>What happens</h3><p>${d.what}</p>
+  <h3>Why it matters</h3><p>${d.why}</p>
+  <div class="result"><h3 style="margin-top:0">Result</h3><p>${d.res}</p></div>
+  <h3>Techniques</h3><div class="chips">${d.tech.map(t=>`<span>${t}</span>`).join("")}</div>
+  <a class="nb" href="${REPO+d.nb}.ipynb" target="_blank" rel="noopener">Open notebook ${d.nb.slice(0,2)} on GitHub</a>
+  <div class="nav"><button id="prev" ${n===1?"disabled":""}>Previous stage</button><button id="next" ${n===N?"disabled":""}>Next stage</button></div>`;
+  document.getElementById("prev").onclick=()=>show(Math.max(1,n-1));
+  document.getElementById("next").onclick=()=>show(Math.min(N,n+1));
+}
+document.querySelectorAll(".node").forEach(g=>{
+  g.addEventListener("click",()=>show(+g.dataset.n));
+  g.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();show(+g.dataset.n);}});
+});
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="BUTTON")return;
+  if(e.key==="ArrowRight")show(Math.min(N,cur+1));
+  if(e.key==="ArrowLeft")show(Math.max(1,cur-1));
+});
+show(1);
+</script></body></html>
